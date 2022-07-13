@@ -2,15 +2,16 @@ import React from 'react';
 
 export default class Quiz extends React.Component {
     constructor(props) {
-        super();
+        super(props);
         this.state = {
             error: null,
             isLoaded: false,
-            isLoadedForNextQuestion : false,
+            isLoadedForNextQuestion: false,
             answers: [],
             correctAnswer: -1,
             selectedButton: -1,
             question: '',
+            mode : this.props.mode
         };
         this.handleClick = this.handleClick.bind(this);
     }
@@ -23,7 +24,7 @@ export default class Quiz extends React.Component {
         const { isLoaded, answers, correctAnswer, selectedButton } = this.state;
 
         const defaultButton =
-        "mb-3 text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-200 dark:focus:ring-blue-900 font-medium rounded-lg text-sm px-5 py-2.5 inline-flex justify-center w-full text-center hover:scale-105"
+            "mb-3 text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-200 dark:focus:ring-blue-900 font-medium rounded-lg text-sm px-5 py-2.5 inline-flex justify-center w-full text-center hover:scale-105"
 
         const successButton =
             "mb-3 text-white bg-green-600 focus:outline-none  font-medium rounded-lg text-sm px-5 py-2.5 inline-flex justify-center w-full text-center hover:scale-105"
@@ -50,12 +51,12 @@ export default class Quiz extends React.Component {
             buttons = answers.map((value, index) => {
                 return <button id={index} onClick={this.handleClick} type="button" key={index} className={
                     selectedButton === correctAnswer && index === correctAnswer
-                    ? successButton
-                    : selectedButton !== correctAnswer && index === selectedButton
-                    ? wrongButton
-                    : defaultButton
-                      
-                  }>{value}</button>
+                        ? successButton
+                        : selectedButton !== correctAnswer && index === selectedButton
+                            ? wrongButton
+                            : defaultButton
+
+                }>{value}</button>
             })
         }
 
@@ -65,30 +66,37 @@ export default class Quiz extends React.Component {
     handleClick(event) {
         const { correctAnswer, selectedButton, isLoadedForNextQuestion } = this.state;
 
-        if(isLoadedForNextQuestion){
+        if (isLoadedForNextQuestion) {
             return;
         }
 
         this.setState({
-            selectedButton : Number(event.target.id),
-            isLoadedForNextQuestion : true,
+            selectedButton: Number(event.target.id),
+            isLoadedForNextQuestion: true,
         });
 
         if (selectedButton === correctAnswer) {
             console.log('doğru');
-        } 
-        
+        }
+
         setTimeout(() => {
             this.getDataFromApi();
             this.setState({
-                selectedButton : -1,
+                selectedButton: -1,
                 isLoadedForNextQuestion: false,
             });
         }, 2000);
     }
 
     getDataFromApi() {
-        fetch("https://quiz-it-api.herokuapp.com/api/question/?difficulty=1")
+        const { mode } = this.state;
+
+        const url = mode === 1 
+        ? 'https://quiz-it-api.herokuapp.com/api/question/?difficulty=1' 
+        : 'https://quiz-it-api.herokuapp.com/api/question/fill-in-blanks?difficulty=1'
+
+
+        fetch(url)
             .then(res => res.json())
             .then(
                 (result) => {
@@ -111,17 +119,7 @@ export default class Quiz extends React.Component {
     render() {
         const { question } = this.state;
         return (
-            <div className="p-6 max-w-md bg-white rounded-lg border border-gray-200 shadow-md dark:bg-gray-800 dark:border-gray-700">
-
-                <ul className=" mb-6  text-sm font-medium text-center text-gray-500 rounded-lg divide-x divide-gray-200 shadow sm:flex dark:divide-gray-700 dark:text-gray-400">
-                    <li className="w-full">
-                        <a href="!#" className="inline-block p-4 w-full text-gray-900 bg-gray-100 rounded-l-lg focus:ring-4 focus:ring-blue-300 active focus:outline-none dark:bg-gray-700 dark:text-white" >Kelimeler</a>
-                    </li>
-                    <li className="w-full">
-                        <a href="!#" className="inline-block p-4 w-full bg-white hover:text-gray-700 hover:bg-gray-50 focus:ring-4 focus:ring-blue-300 focus:outline-none dark:hover:text-white dark:bg-gray-800 dark:hover:bg-gray-700">Boşluk Doldurma</a>
-                    </li>
-
-                </ul>
+            <div>
                 <div className="mb-6">
                     <div className="flex justify-between mb-1">
                         <span className="text-base font-medium text-blue-700 dark:text-white">Başarım</span>
@@ -139,7 +137,6 @@ export default class Quiz extends React.Component {
 
                 <p className="mb-3 font-normal text-gray-700 dark:text-gray-400">Here are the biggest enterprise technology acquisitions of 2021 so far, in reverse chronological order.</p>
                 {this.renderButtons()}
-
             </div>
         )
     }
