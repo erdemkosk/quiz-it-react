@@ -11,7 +11,11 @@ export default class Quiz extends React.Component {
             correctAnswer: -1,
             selectedButton: -1,
             question: '',
-            mode : this.props.mode
+            cumulativeSuccessQuestionCount: 0,
+            successCount: 1,
+            totalQuestionCount: 0,
+            level : 1,
+            mode: this.props.mode
         };
         this.handleClick = this.handleClick.bind(this);
     }
@@ -21,7 +25,7 @@ export default class Quiz extends React.Component {
     }
 
     renderButtons() {
-        const { isLoaded, answers, correctAnswer, selectedButton } = this.state;
+        const { isLoaded, answers, correctAnswer, selectedButton, } = this.state;
 
         const defaultButton =
             "mb-3 text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-200 dark:focus:ring-blue-900 font-medium rounded-lg text-sm px-5 py-2.5 inline-flex justify-center w-full text-center hover:scale-105"
@@ -63,8 +67,37 @@ export default class Quiz extends React.Component {
         return buttons;
     }
 
+    calculateLevel() {
+        const { successCount } = this.state;
+
+        const level =  Math.ceil(successCount / 5);
+
+        this.setState({
+            level: level < 5 ? level : 5,
+        });
+    }
+
+    renderStarts() {
+        const { level } = this.state;
+
+        const values = [];
+
+        const successStarCount = level;
+        const unsuccessStarCount = 5-level;
+        
+        for (let index = 0; index < successStarCount; index++) {
+            values.push(<svg key = {index} aria-hidden="true" className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><title>First star</title><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>)
+        }
+
+        for (let index = 0; index < unsuccessStarCount; index++) {
+            values.push(<svg key = {index + 'empty'} aria-hidden="true" className="w-5 h-5 text-gray-300 dark:text-gray-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><title>Fifth star</title><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>)
+        }
+
+        return values;
+    }
+
     handleClick(event) {
-        const { correctAnswer, selectedButton, isLoadedForNextQuestion } = this.state;
+        const { correctAnswer, isLoadedForNextQuestion, cumulativeSuccessQuestionCount, successCount, totalQuestionCount } = this.state;
 
         if (isLoadedForNextQuestion) {
             return;
@@ -73,11 +106,23 @@ export default class Quiz extends React.Component {
         this.setState({
             selectedButton: Number(event.target.id),
             isLoadedForNextQuestion: true,
+            totalQuestionCount: totalQuestionCount + 1
         });
 
-        if (selectedButton === correctAnswer) {
-            console.log('doğru');
+        if (Number(event.target.id) === correctAnswer) {
+            this.setState({
+                cumulativeSuccessQuestionCount: cumulativeSuccessQuestionCount + 1,
+                successCount: successCount + 1,
+            });
         }
+
+        else {
+            this.setState({
+                successCount: successCount > 1 ? successCount - 1 : successCount,
+            });
+        }
+
+        this.calculateLevel();
 
         setTimeout(() => {
             this.getDataFromApi();
@@ -85,15 +130,15 @@ export default class Quiz extends React.Component {
                 selectedButton: -1,
                 isLoadedForNextQuestion: false,
             });
-        }, 2000);
+        }, 1500);
     }
 
     getDataFromApi() {
-        const { mode } = this.state;
+        const { mode, level } = this.state;
 
-        const url = mode === 1 
-        ? 'https://quiz-it-api.herokuapp.com/api/question/?difficulty=1' 
-        : 'https://quiz-it-api.herokuapp.com/api/question/fill-in-blanks?difficulty=1'
+        const url = mode === 1
+            ? 'https://quiz-it-api.herokuapp.com/api/question/?difficulty=' + level
+            : 'https://quiz-it-api.herokuapp.com/api/question/fill-in-blanks?difficulty=' + level
 
 
         fetch(url)
@@ -117,25 +162,26 @@ export default class Quiz extends React.Component {
     }
 
     render() {
-        const { question } = this.state;
+        const { question, cumulativeSuccessQuestionCount, totalQuestionCount } = this.state;
+
         return (
-            <div>
-                <div className="mb-6">
+            <div >
+                <div className="mb-6 ">
                     <div className="flex justify-between mb-1">
-                        <span className="text-base font-medium text-blue-700 dark:text-white">Başarım</span>
-                        <span className="text-sm font-medium text-blue-700 dark:text-white">50%</span>
+                        <span className="text-base font-medium text-blue-700 dark:text-white">Seviye</span>
+                        <div className="flex items-center">
+                        {this.renderStarts()}
+</div>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                        <div className="bg-blue-600 h-2.5 rounded-full w-1/2"></div>
-                    </div>
+                    
                 </div>
 
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between w-96">
                     <h5 className="mb-6 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">{question}?</h5>
-                    <span className="mb-6 bg-blue-100 text-blue-800 text-sm font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-blue-200 dark:text-blue-800">2/12</span>
+                    <span className="mb-6 bg-blue-100 text-blue-800 text-sm font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-blue-200 dark:text-blue-800">{cumulativeSuccessQuestionCount} / {totalQuestionCount}</span>
                 </div>
 
-                <p className="mb-3 font-normal text-gray-700 dark:text-gray-400">Here are the biggest enterprise technology acquisitions of 2021 so far, in reverse chronological order.</p>
+                <p className="mb-3 font-normal text-gray-700 dark:text-gray-400"></p>
                 {this.renderButtons()}
             </div>
         )
